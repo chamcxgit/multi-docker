@@ -1,0 +1,66 @@
+version: '3'
+services:
+    postgres:
+        image: 'postgres:latest'
+    redis:
+        image: 'redis:latest'
+    #Cannot use server as service name due to server being a keyword in nginx default.conf
+    api:
+        #?? What is depends_on
+        depends_on:
+            - postgres
+        build:
+            dockerfile: Dockerfile.dev
+            # context is the location of the dockerfile. . refers to root project folder where docker-compose is ran and server folder is a /project/server
+            context: ./server/
+        volumes:
+            - /app/node_modules
+            # front part is relative path from where docker-compose yml file is located
+            # server dir is inside project folder is /project/server 
+            - ./server:/app
+        environment:
+            # Variable is service name redis
+            - REDIS_HOST=redis
+            # Variable default values can be found in redis docker image documentation
+            - REDIS_PORT=6379
+            # Variable default values can be found in postgres docker image documentation
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+    client:
+        build:
+            dockerfile: Dockerfile.dev
+            # context is the location of the dockerfile. . refers to root project folder where docker-compose is ran and client folder is a /project/client
+            context: ./client/
+        volumes:
+            - /app/node_modules
+            # front part is relative path from where docker-compose yml file is located
+            # client dir is inside project folder is /project/client
+            - ./client:/app
+    worker:
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+        build:
+            dockerfile: Dockerfile.dev
+            # context is the location of the dockerfile. . refers to root project folder where docker-compose is ran and worker folder is a /project/worker
+            context: ./worker/
+        volumes:
+            - /app/node_modules
+            # front part is relative path from where docker-compose yml file is located
+            # worker dir is inside project folder is /project/worker
+            - ./worker:/app          
+    nginx:
+        # Always restart the container if it stops
+        restart: always
+        environment:
+            - CHOKIDAR_USEPOLLING=true
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./nginx/
+        ports:
+            - '3050:80'
+            
+            
