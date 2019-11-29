@@ -1,0 +1,22 @@
+sudo: required
+services:
+    -docker
+    
+before_install:
+    - docker build -t chamcx/react-test -f ./client/Dockerfile.dev ./client
+    
+script: 
+    - docker run chamcx/react-test npm test -- --coverage
+
+after_success:
+    - docker build -t chamcx/multi-client ./client
+    - docker build -t chamcx/multi-nginx ./nginx
+    - docker build -t chamcx/multi-server ./server
+    - docker build -t chamcx/multi-worker ./worker
+    #Login to Docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    #Take the images and push to Docker Hub
+    - docker push chamcx/multi-client
+    - docker push chamcx/multi-nginx
+    - docker push chamcx/multi-server
+    - docker push chamcx/multi-worker  
